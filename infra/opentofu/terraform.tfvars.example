@@ -1,0 +1,9 @@
+project_id                  = "personal-434212"
+region                      = "us-east1"
+github_owner                = "kabala"
+github_repository_name      = "AlloyDbCrudFrontend"
+github_repository_full_name = "kabala/AlloyDbCrudFrontend"
+api_base_url                = "https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app"
+
+# This workspace already created the private repo with gh.
+create_github_repository = false

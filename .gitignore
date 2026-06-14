@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+infra/opentofu/.terraform/
+infra/opentofu/.terraform.lock.hcl
+infra/opentofu/terraform.tfstate
+infra/opentofu/terraform.tfstate.backup
+infra/opentofu/*.tfvars
+!.gitkeep
