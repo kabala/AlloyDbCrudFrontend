@@ -5,7 +5,7 @@ React + Vite frontend for the deployed AlloyDB CRUD API.
 ## Deployed URLs
 
 - Frontend: `https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app`
-- API: `https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app`
+- API fallback: `https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app`
 
 ## Local Development
 
@@ -56,7 +56,7 @@ cors_allowed_origins = [
 ]
 ```
 
-The frontend stores the API URL as the Vite build variable `VITE_API_BASE_URL`, populated by frontend OpenTofu into GitHub Actions variables.
+During production deploy, GitHub Actions first tries to discover the current backend Cloud Run URL from GCP. It checks `API_CLOUD_RUN_SERVICE` if that repository variable exists, otherwise it checks `cloudsql-crud-api`, then `alloydb-crud-api`. If none exists, it falls back to `VITE_API_BASE_URL` or `https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app`.
 
 ## API Contract
 

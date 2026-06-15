@@ -14,7 +14,7 @@ env:
   CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
   CLOUD_RUN_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_SERVICE_ACCOUNT }}
   IMAGE_NAME: ${{ vars.FRONTEND_IMAGE_NAME }}
-  VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+  FALLBACK_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app' }}
 
 jobs:
   deploy:
@@ -36,6 +36,34 @@ jobs:
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Resolve API base URL
+        run: |
+          set -euo pipefail
+
+          api_url=""
+          for service in "${{ vars.API_CLOUD_RUN_SERVICE || 'cloudsql-crud-api' }}" alloydb-crud-api; do
+            if [ -z "$service" ]; then
+              continue
+            fi
+
+            candidate="$(gcloud run services describe "$service" \
+              --project "$PROJECT_ID" \
+              --region "$REGION" \
+              --format "value(status.url)" 2>/dev/null || true)"
+
+            if [ -n "$candidate" ]; then
+              api_url="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$api_url" ]; then
+            api_url="${FALLBACK_API_BASE_URL%/}"
+          fi
+
+          echo "VITE_API_BASE_URL=$api_url" >> "$GITHUB_ENV"
+          echo "Using API base URL: $api_url"
 
       - name: Build and push frontend image
         run: |
