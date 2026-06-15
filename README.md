@@ -38,6 +38,22 @@ Then push the repo to GitHub and run the `Deploy Production` workflow.
 
 After the frontend URL exists, add that exact origin to the backend repo's `cors_allowed_origins` and apply the backend OpenTofu stack.
 
+## Shared Config Sync
+
+The backend owns the API URL and CORS allowlist. The frontend owns its Cloud Run origin. To sync those values locally:
+
+```powershell
+.\scripts\sync-shared-config.ps1 -BackendRepoPath ..\DEMO
+```
+
+This writes ignored local files:
+
+- `infra/opentofu/api.auto.tfvars`
+- `.env.local`
+- `..\DEMO\infra\opentofu\frontend.auto.tfvars`
+
+After frontend infrastructure exists, run it again with `-PlanBackend` or `-ApplyBackend` to apply backend CORS from the synced value.
+
 ## API Contract
 
 The UI calls:
