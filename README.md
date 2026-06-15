@@ -2,6 +2,11 @@
 
 React + Vite frontend for the deployed AlloyDB CRUD API.
 
+## Deployed URLs
+
+- Frontend: `https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app`
+- API: `https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app`
+
 ## Local Development
 
 ```powershell
@@ -38,21 +43,20 @@ Then push the repo to GitHub and run the `Deploy Production` workflow.
 
 After the frontend URL exists, add that exact origin to the backend repo's `cors_allowed_origins` and apply the backend OpenTofu stack.
 
-## Shared Config Sync
+## Shared Config
 
-The backend owns the API URL and CORS allowlist. The frontend owns its Cloud Run origin. To sync those values locally:
+The deployed frontend URL is stable because Cloud Run keeps the service URL for `alloydb-crud-frontend` in project `personal-434212` and region `us-east1`.
 
-```powershell
-.\scripts\sync-shared-config.ps1 -BackendRepoPath ..\DEMO
+The backend repo stores that URL directly in its OpenTofu defaults as the CORS allowlist:
+
+```hcl
+cloud_run_allow_unauthenticated = true
+cors_allowed_origins = [
+  "https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app",
+]
 ```
 
-This writes ignored local files:
-
-- `infra/opentofu/api.auto.tfvars`
-- `.env.local`
-- `..\DEMO\infra\opentofu\frontend.auto.tfvars`
-
-After frontend infrastructure exists, run it again with `-PlanBackend` or `-ApplyBackend` to apply backend CORS from the synced value.
+The frontend stores the API URL as the Vite build variable `VITE_API_BASE_URL`, populated by frontend OpenTofu into GitHub Actions variables.
 
 ## API Contract
 

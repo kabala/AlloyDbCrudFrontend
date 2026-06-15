@@ -26,16 +26,13 @@ This workspace already has a private GitHub remote at `kabala/AlloyDbCrudFronten
 
 After `tofu apply`, run the `Deploy Production` workflow.
 
-The output `cloud_run_service_url` must be added to the backend API CORS allowlist:
+The frontend Cloud Run URL is:
 
-```hcl
-cloud_run_allow_unauthenticated = true
-cors_allowed_origins = [
-  "https://your-frontend-url.run.app"
-]
+```text
+https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app
 ```
 
-Then apply the backend OpenTofu stack again.
+That value is stored directly in the backend repo OpenTofu defaults as the API CORS allowlist.
 
 ## Notes
 
