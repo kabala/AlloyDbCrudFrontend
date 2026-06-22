@@ -1,79 +1,136 @@
-# AlloyDB CRUD Frontend
+# CRM/POS Retail Frontend
 
-React + Vite frontend for the deployed AlloyDB CRUD API.
+Aplicacion SPA en React para consumir la API operacional de CRM/POS textil del repositorio `AlloyDbCrudApi`.
 
-## Deployed URLs
+La interfaz reemplaza el demo CRUD de `items` y cubre los modulos principales del MVP: autenticacion, panel operativo, POS, clientes, productos, inventario, ventas, devoluciones y usuarios.
 
-- Frontend: `https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app`
-- API fallback: `https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app`
+## Stack
 
-## Local Development
+- React 19 + Vite 8.
+- TypeScript estricto.
+- Tailwind CSS 4 con plugin oficial de Vite.
+- shadcn/ui v4 como componentes fuente en `src/components/ui`.
+- TanStack Router para rutas client-side.
+- TanStack Query para cache, invalidacion y estados remotos.
+- React Hook Form + Zod para formularios.
+- Lucide React para iconos.
+- Oxlint + Oxfmt como linter y formateador principal.
+
+## Configuracion local
+
+Instalar dependencias:
 
 ```powershell
-npm install
-npm run dev
+pnpm install
 ```
 
-The app reads the backend URL from `VITE_API_BASE_URL`. If it is not set, it uses:
+Ejecutar contra la API local:
+
+```powershell
+$env:VITE_API_BASE_URL="http://localhost:8080"
+pnpm run dev
+```
+
+Si `VITE_API_BASE_URL` no esta definido, la app usa el fallback:
 
 ```text
 https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app
 ```
 
-To override it locally:
+La API local se puede levantar desde `C:\Users\kabal\dev\UNi\AlloyDbCrudApi` con Docker Compose:
 
 ```powershell
-$env:VITE_API_BASE_URL="http://localhost:8080"
-npm run dev
+docker compose up -d --build
 ```
 
-## Deploy
+## Usuarios demo
 
-Infrastructure lives in `infra/opentofu` and creates the Cloud Run frontend service, Artifact Registry repository, deploy service account, Workload Identity provider, and GitHub Actions variables.
+Estos usuarios son sembrados por el backend en entorno de desarrollo:
+
+| Rol          | Correo                    | Contrasena        |
+| ------------ | ------------------------- | ----------------- |
+| Superadmin   | `superadmin@retail.local` | `Superadmin#2026` |
+| Vendedor     | `vendedor@retail.local`   | `Vendedor#2026`   |
+| Visualizador | `viewer@retail.local`     | `Viewer#2026`     |
+
+## Scripts
 
 ```powershell
-cd infra/opentofu
-Copy-Item terraform.tfvars.example terraform.tfvars
-tofu init
-tofu plan
-tofu apply
+pnpm run dev        # Servidor Vite
+pnpm run build      # Build de produccion
+pnpm run preview    # Preview del build
+pnpm run lint       # Oxlint
+pnpm run lint:fix   # Oxlint con autofix
+pnpm run fmt        # Oxfmt escribe formato
+pnpm run fmt:check  # Verifica formato sin escribir
+pnpm run check      # lint + fmt:check + build
 ```
 
-Then push the repo to GitHub and run the `Deploy Production` workflow.
+## Rutas
 
-After the frontend URL exists, add that exact origin to the backend repo's `cors_allowed_origins` and apply the backend OpenTofu stack.
+| Ruta                    | Descripcion                    |
+| ----------------------- | ------------------------------ |
+| `/login`                | Inicio de sesion               |
+| `/`                     | Panel operativo                |
+| `/pos`                  | Registro de venta POS          |
+| `/customers`            | Clientes CRM                   |
+| `/products`             | Catalogo de productos          |
+| `/inventory`            | Inventario por tienda/producto |
+| `/sales`                | Listado de ventas              |
+| `/sales/$transactionId` | Detalle de venta               |
+| `/returns`              | Registro de devolucion         |
+| `/users`                | Administracion de usuarios     |
 
-## Shared Config
+## Permisos por rol
 
-The deployed frontend URL is stable because Cloud Run keeps the service URL for `alloydb-crud-frontend` in project `personal-434212` and region `us-east1`.
+- `Superadmin`: acceso total, creacion de productos y usuarios, ventas y devoluciones.
+- `Vendedor`: POS, clientes, lectura de productos, inventario, ventas y devoluciones.
+- `Visualizador`: lectura de panel, clientes, productos y ventas. No ve inventario ni acciones de escritura.
 
-The backend repo stores that URL directly in its OpenTofu defaults as the CORS allowlist:
+El backend no expone `/me`; por eso la app decodifica el JWT y obtiene `sub`, `email`, `name` y claims de rol desde el access token.
 
-```hcl
-cloud_run_allow_unauthenticated = true
-cors_allowed_origins = [
-  "https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app",
-]
+## Integracion API
+
+La capa `src/api.ts` centraliza:
+
+- URL base desde `VITE_API_BASE_URL`.
+- Persistencia de sesion en `localStorage`.
+- Header `Authorization: Bearer`.
+- Refresh automatico al recibir `401`.
+- Tipos TypeScript de DTOs y resultados paginados.
+- Mapeo local de enums numericos a etiquetas en espanol.
+
+Los campos `DateOnly` se envian como `YYYY-MM-DD`. Las listas usan paginacion del backend con `page` y `pageSize`.
+
+## Arquitectura frontend
+
+La estructura sigue una separacion por aplicacion, componentes reutilizables y features:
+
+```text
+src/
+  app/                 providers, router, auth, query client
+  components/
+    ui/                componentes shadcn fuente
+    atoms/             piezas visuales pequenas
+    molecules/         combinaciones reutilizables
+    organisms/         layouts parciales y tablas
+    templates/         shells de pagina
+  features/            pantallas por dominio
+  lib/                 utilidades compartidas
 ```
 
-During production deploy, GitHub Actions first tries to discover the current backend Cloud Run URL from GCP. It checks `API_CLOUD_RUN_SERVICE` if that repository variable exists, otherwise it checks `cloudsql-crud-api`, then `alloydb-crud-api`. If none exists, it falls back to `VITE_API_BASE_URL` or `https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app`.
+## Despliegue
 
-## API Contract
+El contenedor mantiene la forma original:
 
-The UI calls:
+- `Dockerfile` compila con Node y sirve `dist` con nginx.
+- `nginx.conf` redirige rutas SPA a `index.html`.
+- La URL de API se inyecta en build con `VITE_API_BASE_URL`.
 
-- `GET /api/items`
-- `POST /api/items`
-- `PUT /api/items/{id}`
-- `DELETE /api/items/{id}`
+Ejemplo:
 
-Item shape:
-
-```ts
-type Item = {
-  id: number;
-  name: string;
-  description: string | null;
-  createdAt: string;
-};
+```powershell
+docker build --build-arg VITE_API_BASE_URL="https://tu-api.run.app" -t crm-pos-frontend .
 ```
+
+Despues de desplegar el frontend, su origen publico debe estar permitido en `Cors:AllowedOrigins` del backend.
