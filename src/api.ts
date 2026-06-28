@@ -166,6 +166,102 @@ export type ReturnRecord = {
   approvedAt: string | null;
 };
 
+export type BiSummary = {
+  transactions: number;
+  unitsSold: number;
+  revenue: number;
+  margin: number;
+  marginRate: number;
+  returnRate: number;
+  avgDiscount: number;
+  avgTicket: number;
+  dateFrom: string | null;
+  dateTo: string | null;
+};
+
+export type BiPeriodPoint = {
+  period: string;
+  transactions: number;
+  unitsSold: number;
+  revenue: number;
+  margin: number;
+  marginRate: number;
+  returnRate: number;
+  avgDiscount: number;
+};
+
+export type BiBreakdownItem = {
+  key: string;
+  label: string;
+  secondaryLabel: string | null;
+  transactions: number;
+  unitsSold: number;
+  revenue: number;
+  margin: number;
+  marginRate: number;
+  returnRate: number;
+  avgDiscount: number;
+};
+
+export type BiStorePerformance = BiBreakdownItem & {
+  storeSizeM2: number;
+  revenuePerM2: number | null;
+};
+
+export type BiDiscountImpact = {
+  discount: number;
+  transactions: number;
+  unitsSold: number;
+  revenue: number;
+  margin: number;
+  marginRate: number;
+  returnRate: number;
+};
+
+export type BiProductAbc = {
+  rank: number;
+  productId: string;
+  category: string;
+  color: string;
+  size: string;
+  season: string;
+  supplier: string;
+  transactions: number;
+  unitsSold: number;
+  revenue: number;
+  margin: number;
+  marginRate: number;
+  returnRate: number;
+  cumulativeRevenuePercent: number;
+  abcClass: string;
+};
+
+export type BiCustomerRfm = {
+  customerId: string;
+  city: string;
+  age: number;
+  gender: number;
+  recencyDays: number;
+  frequency: number;
+  monetary: number;
+  lastPurchaseDate: string;
+  rScore: number;
+  fScore: number;
+  mScore: number;
+  segment: string;
+};
+
+export type BiDashboard = {
+  summary: BiSummary;
+  yearly: BiPeriodPoint[];
+  monthly: BiPeriodPoint[];
+  categoryPerformance: BiBreakdownItem[];
+  storePerformance: BiStorePerformance[];
+  discountImpact: BiDiscountImpact[];
+  cityPerformance: BiBreakdownItem[];
+  recommendations: string[];
+};
+
 export type TokenResponse = {
   accessToken: string;
   refreshToken: string;
@@ -402,6 +498,20 @@ export const api = {
     get: (id: string) => request<ReturnRecord>(`/api/returns/${id}`),
     create: (body: CreateReturnInput) =>
       request<ReturnRecord>("/api/returns", { method: "POST", body }),
+  },
+  bi: {
+    dashboard: (query?: { fromDate?: string; toDate?: string }) =>
+      request<BiDashboard>("/api/bi/dashboard", { query }),
+    productAbc: (query?: {
+      fromDate?: string;
+      toDate?: string;
+      take?: number;
+      abcClass?: string;
+    }) => request<BiProductAbc[]>("/api/bi/products/abc", { query }),
+    customerRfm: (query?: { fromDate?: string; toDate?: string; take?: number }) =>
+      request<BiCustomerRfm[]>("/api/bi/customers/rfm", { query }),
+    breakdown: (dimension: string, query?: { fromDate?: string; toDate?: string; take?: number }) =>
+      request<BiBreakdownItem[]>(`/api/bi/breakdowns/${encodeURIComponent(dimension)}`, { query }),
   },
 };
 

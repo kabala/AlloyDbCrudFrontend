@@ -2,6 +2,7 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 import { ProtectedRoute } from "@/app/protected-route";
 import { AppLayout } from "@/components/templates/app-layout";
 import { AuthLayout } from "@/components/templates/auth-layout";
+import { BiDashboardPage } from "@/features/bi/bi-dashboard-page";
 import { CustomersPage } from "@/features/customers/customers-page";
 import { DashboardPage } from "@/features/dashboard/dashboard-page";
 import { InventoryPage } from "@/features/inventory/inventory-page";
@@ -32,6 +33,18 @@ const dashboardRoute = createRoute({
     <ProtectedRoute>
       <AppLayout>
         <DashboardPage />
+      </AppLayout>
+    </ProtectedRoute>
+  ),
+});
+
+const biRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/bi",
+  component: () => (
+    <ProtectedRoute>
+      <AppLayout>
+        <BiDashboardPage />
       </AppLayout>
     </ProtectedRoute>
   ),
@@ -136,6 +149,7 @@ const usersRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   loginRoute,
   dashboardRoute,
+  biRoute,
   posRoute,
   customersRoute,
   productsRoute,

@@ -14,6 +14,7 @@ La interfaz reemplaza el demo CRUD de `items` y cubre los modulos principales de
 - TanStack Query para cache, invalidacion y estados remotos.
 - React Hook Form + Zod para formularios.
 - Lucide React para iconos.
+- Recharts para graficos del modulo BI embebido.
 - Oxlint + Oxfmt como linter y formateador principal.
 
 ## Configuracion local
@@ -72,6 +73,7 @@ pnpm run check      # lint + fmt:check + build
 | ----------------------- | ------------------------------ |
 | `/login`                | Inicio de sesion               |
 | `/`                     | Panel operativo                |
+| `/bi`                   | Dashboard BI embebido          |
 | `/pos`                  | Registro de venta POS          |
 | `/customers`            | Clientes CRM                   |
 | `/products`             | Catalogo de productos          |
@@ -119,6 +121,19 @@ Por ese volumen, el frontend no carga catalogos completos para el POS. La venta 
 Las pantallas de productos, clientes, ventas e inventario se mantienen paginadas. La pantalla de ventas permite filtrar por rango de fechas para revisar la historia sembrada.
 
 La extraccion BI, BigQuery y los modelos analiticos permanecen fuera de esta SPA; esta aplicacion sigue siendo operacional CRM/POS.
+
+## Modulo BI embebido
+
+La ruta `/bi` consume endpoints agregados del backend:
+
+- `GET /api/bi/dashboard`
+- `GET /api/bi/products/abc`
+- `GET /api/bi/customers/rfm`
+- `GET /api/bi/breakdowns/{dimension}`
+
+El dashboard consulta la misma base operacional sembrada en Cloud SQL y presenta KPIs, tendencias, descuentos, ciudades, tiendas, ABC y RFM sin descargar datasets completos al navegador.
+
+Este modulo no reemplaza la arquitectura BI final. BigQuery y los modelos analiticos cloud siguen siendo la opcion preferida para escalado, integracion con Looker Studio o Power BI, y procesos BI formales.
 
 ## Arquitectura frontend
 

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import {
   Boxes,
+  ChartNoAxesCombined,
   ClipboardList,
   Home,
   Package,
@@ -20,6 +21,7 @@ const navItems: Array<{
   roles?: RoleName[];
 }> = [
   { label: "Panel", to: "/", icon: Home },
+  { label: "BI", to: "/bi", icon: ChartNoAxesCombined },
   { label: "POS", to: "/pos", icon: ShoppingCart, roles: ["Superadmin", "Vendedor"] },
   { label: "Clientes", to: "/customers", icon: Users },
   { label: "Productos", to: "/products", icon: Package },
