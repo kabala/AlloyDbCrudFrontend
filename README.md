@@ -102,6 +102,24 @@ La capa `src/api.ts` centraliza:
 
 Los campos `DateOnly` se envian como `YYYY-MM-DD`. Las listas usan paginacion del backend con `page` y `pageSize`.
 
+## Datos masivos BI
+
+La API de produccion puede estar poblada con la semilla historica masiva para BI:
+
+- Productos: cerca de 50,000.
+- Clientes: cerca de 25,000.
+- Ventas historicas: cerca de 43,489 entre `2020-01-01` y `2024-12-31`.
+- Inventario: decenas de miles de registros por tienda/producto.
+
+Por ese volumen, el frontend no carga catalogos completos para el POS. La venta usa busqueda explicita por ID:
+
+- Cliente ejemplo: `C000001`.
+- Producto ejemplo: `P000001`.
+
+Las pantallas de productos, clientes, ventas e inventario se mantienen paginadas. La pantalla de ventas permite filtrar por rango de fechas para revisar la historia sembrada.
+
+La extraccion BI, BigQuery y los modelos analiticos permanecen fuera de esta SPA; esta aplicacion sigue siendo operacional CRM/POS.
+
 ## Arquitectura frontend
 
 La estructura sigue una separacion por aplicacion, componentes reutilizables y features:

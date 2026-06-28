@@ -20,15 +20,19 @@ export function SalesPage() {
   const [storeId, setStoreId] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [status, setStatus] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const stores = useQuery({ queryKey: ["stores"], queryFn: api.stores.list });
   const sales = useQuery({
-    queryKey: ["sales", { page, storeId, customerId, status }],
+    queryKey: ["sales", { page, storeId, customerId, status, fromDate, toDate }],
     queryFn: () =>
       api.sales.list({
         page,
         pageSize: 25,
         storeId,
         customerId,
+        fromDate,
+        toDate,
         status: status ? Number(status) : undefined,
       }),
   });
@@ -48,7 +52,7 @@ export function SalesPage() {
         }
       />
       <Card>
-        <CardContent className="grid gap-3 p-4 md:grid-cols-[220px_1fr_180px_auto]">
+        <CardContent className="grid gap-3 p-4 md:grid-cols-[220px_1fr_160px_160px_180px_auto]">
           <Select
             value={storeId}
             onChange={(event) => {
@@ -69,6 +73,22 @@ export function SalesPage() {
             onChange={(event) => {
               setPage(1);
               setCustomerId(event.target.value);
+            }}
+          />
+          <Input
+            type="date"
+            value={fromDate}
+            onChange={(event) => {
+              setPage(1);
+              setFromDate(event.target.value);
+            }}
+          />
+          <Input
+            type="date"
+            value={toDate}
+            onChange={(event) => {
+              setPage(1);
+              setToDate(event.target.value);
             }}
           />
           <Select
@@ -92,6 +112,8 @@ export function SalesPage() {
               setStoreId("");
               setCustomerId("");
               setStatus("");
+              setFromDate("");
+              setToDate("");
               setPage(1);
             }}
           >

@@ -57,7 +57,7 @@ export function DashboardPage() {
         <MetricCard
           label="Ventas"
           value={formatInteger(sales.data?.total ?? 0)}
-          detail={formatMoney(revenue)}
+          detail={`Vista: ${formatMoney(revenue)}`}
           icon={Receipt}
         />
         <MetricCard
@@ -92,13 +92,13 @@ export function DashboardPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Margen reciente</CardTitle>
+            <CardTitle>Margen de la vista</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-semibold">{formatMoney(margin)}</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Calculado sobre las ventas cargadas en la vista actual. Los KPIs BI dedicados quedan
-              fuera del API.
+              Calculado solo sobre las ventas visibles en esta pagina. Los KPIs historicos de BI se
+              generan fuera de esta aplicacion.
             </p>
           </CardContent>
         </Card>

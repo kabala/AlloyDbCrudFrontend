@@ -4,7 +4,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Product, api, todayDateOnly } from "@/api";
+import { Customer, Product, api, todayDateOnly } from "@/api";
 import { Field } from "@/components/molecules/field";
 import { PageHeader } from "@/components/molecules/page-header";
 import { Button } from "@/components/ui/button";
@@ -30,19 +30,14 @@ type SaleForm = z.infer<typeof saleSchema>;
 
 export function PosPage() {
   const queryClient = useQueryClient();
-  const [selectedProductId, setSelectedProductId] = useState("");
+  const [customerLookupId, setCustomerLookupId] = useState("");
+  const [productLookupId, setProductLookupId] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [cart, setCart] = useState<CartLine[]>([]);
   const stores = useQuery({ queryKey: ["stores"], queryFn: api.stores.list });
-  const customers = useQuery({
-    queryKey: ["customers", "pos"],
-    queryFn: () => api.customers.list({ pageSize: 100 }),
-  });
-  const products = useQuery({
-    queryKey: ["products", "pos"],
-    queryFn: () => api.products.list({ pageSize: 100 }),
-  });
   const form = useForm<SaleForm>({
     resolver: zodResolver(saleSchema),
     defaultValues: {
@@ -50,6 +45,21 @@ export function PosPage() {
       date: todayDateOnly(),
       storeId: "",
       customerId: "",
+    },
+  });
+  const customerLookup = useMutation({
+    mutationFn: (customerId: string) => api.customers.get(customerId.trim()),
+    onSuccess: (customer) => {
+      setSelectedCustomer(customer);
+      setCustomerLookupId(customer.customerId);
+      form.setValue("customerId", customer.customerId, { shouldValidate: true });
+    },
+  });
+  const productLookup = useMutation({
+    mutationFn: (productId: string) => api.products.get(productId.trim()),
+    onSuccess: (product) => {
+      setSelectedProduct(product);
+      setProductLookupId(product.productId);
     },
   });
   const totals = useMemo(() => {
@@ -80,6 +90,8 @@ export function PosPage() {
       }),
     onSuccess: async () => {
       setCart([]);
+      setSelectedCustomer(null);
+      setCustomerLookupId("");
       form.reset({
         transactionId: `WEB-${Date.now()}`,
         date: todayDateOnly(),
@@ -93,8 +105,20 @@ export function PosPage() {
     },
   });
 
+  function lookupCustomer() {
+    const customerId = customerLookupId.trim();
+    if (!customerId) return;
+    customerLookup.mutate(customerId);
+  }
+
+  function lookupProduct() {
+    const productId = productLookupId.trim();
+    if (!productId) return;
+    productLookup.mutate(productId);
+  }
+
   function addProduct() {
-    const product = products.data?.items.find((item) => item.productId === selectedProductId);
+    const product = selectedProduct;
     if (!product || quantity < 1) return;
     setCart((current) => {
       const existing = current.find((line) => line.product.productId === product.productId);
@@ -107,7 +131,8 @@ export function PosPage() {
       }
       return [...current, { product, quantity, discountPercent }];
     });
-    setSelectedProductId("");
+    setSelectedProduct(null);
+    setProductLookupId("");
     setQuantity(1);
     setDiscountPercent(0);
   }
@@ -145,16 +170,53 @@ export function PosPage() {
                   ))}
                 </Select>
               </Field>
-              <Field label="Cliente" error={form.formState.errors.customerId?.message}>
-                <Select {...form.register("customerId")}>
-                  <option value="">Seleccionar</option>
-                  {customers.data?.items.map((customer) => (
-                    <option key={customer.customerId} value={customer.customerId}>
-                      {customer.customerId} · {customer.email}
-                    </option>
-                  ))}
-                </Select>
+              <Field label="Cliente ID" error={form.formState.errors.customerId?.message}>
+                <div className="flex gap-2">
+                  <Input
+                    value={customerLookupId}
+                    onChange={(event) => {
+                      setCustomerLookupId(event.target.value);
+                      setSelectedCustomer(null);
+                      form.setValue("customerId", "", { shouldValidate: true });
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        lookupCustomer();
+                      }
+                    }}
+                    placeholder="C000001"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={lookupCustomer}
+                    disabled={!customerLookupId.trim() || customerLookup.isPending}
+                  >
+                    {customerLookup.isPending ? <Loader2 className="animate-spin" /> : null}
+                    Buscar
+                  </Button>
+                </div>
+                <input type="hidden" {...form.register("customerId")} />
               </Field>
+            </CardContent>
+            <CardContent className="pt-0">
+              {selectedCustomer ? (
+                <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                  <p className="font-medium">{selectedCustomer.customerId}</p>
+                  <p className="text-muted-foreground">
+                    {selectedCustomer.email} - {selectedCustomer.city}
+                  </p>
+                </div>
+              ) : customerLookup.error ? (
+                <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {customerLookup.error.message}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Busca el cliente por ID para evitar cargar el catalogo completo.
+                </p>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -162,17 +224,45 @@ export function PosPage() {
               <CardTitle>Agregar productos</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-[minmax(0,1fr)_110px_130px_auto]">
-              <Select
-                value={selectedProductId}
-                onChange={(event) => setSelectedProductId(event.target.value)}
-              >
-                <option value="">Producto</option>
-                {products.data?.items.map((product) => (
-                  <option key={product.productId} value={product.productId}>
-                    {product.productId} · {product.category} · {formatMoney(product.listPrice)}
-                  </option>
-                ))}
-              </Select>
+              <div className="grid gap-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={productLookupId}
+                    onChange={(event) => {
+                      setProductLookupId(event.target.value);
+                      setSelectedProduct(null);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        lookupProduct();
+                      }
+                    }}
+                    placeholder="P000001"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={lookupProduct}
+                    disabled={!productLookupId.trim() || productLookup.isPending}
+                  >
+                    {productLookup.isPending ? <Loader2 className="animate-spin" /> : null}
+                    Buscar
+                  </Button>
+                </div>
+                {selectedProduct ? (
+                  <p className="text-sm text-muted-foreground">
+                    {selectedProduct.productId} - {selectedProduct.category} -{" "}
+                    {formatMoney(selectedProduct.listPrice)}
+                  </p>
+                ) : productLookup.error ? (
+                  <p className="text-sm text-destructive">{productLookup.error.message}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Busca el producto por SKU antes de agregarlo.
+                  </p>
+                )}
+              </div>
               <Input
                 type="number"
                 min={1}
@@ -186,7 +276,7 @@ export function PosPage() {
                 value={discountPercent}
                 onChange={(event) => setDiscountPercent(Number(event.target.value))}
               />
-              <Button type="button" onClick={addProduct}>
+              <Button type="button" onClick={addProduct} disabled={!selectedProduct}>
                 <Plus />
                 Agregar
               </Button>
@@ -211,7 +301,7 @@ export function PosPage() {
                     <div>
                       <p className="font-medium">{line.product.productId}</p>
                       <p className="text-sm text-muted-foreground">
-                        {line.product.category} · {line.product.color}
+                        {line.product.category} - {line.product.color}
                       </p>
                     </div>
                     <p>{line.quantity} und.</p>
